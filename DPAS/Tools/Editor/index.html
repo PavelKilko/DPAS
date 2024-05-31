@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Start Page</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts: Martian Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style> 
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: 'Martian Mono', monospace;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark-theme {
+      background-color: #121212;
+      color: #f1f1f1;
+    }
+    .light-theme {
+      background-color: #f5f5f5;
+      color: #000000;
+    }
+    .btn-custom {
+      font-size: 1.5rem;
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    #themeSwitcher {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    #portInputContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    #popupMessage {
+      display: none;
+      position: absolute;
+      top: 20px;
+      z-index: 1000;
+      padding: 10px 20px;
+      border-radius: 5px;
+      background-color: #28a745;
+      color: #fff;
+      font-size: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    #popupMessage.show {
+      display: block;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="light-theme">
+  <button id="themeSwitcher" class="btn btn-secondary">Switch to Dark Theme</button>
+  <div id="popupMessage">Port Saved!</div>
+  <div id="portInputContainer" class="input-group">
+    <input type="text" id="portInput" class="form-control" placeholder="Enter Port" style="width: 200px;"/>
+    <button id="savePortButton" class="btn btn-primary mt-2">Save Port</button>
+  </div>
+  <button id="imagesButton" class="btn btn-primary btn-custom">Images</button>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.amazonaws.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const body = document.body;
+      const themeSwitcher = document.getElementById('themeSwitcher');
+      const imagesButton = document.getElementById('imagesButton');
+      const portInput = document.getElementById('portInput');
+      const savePortButton = document.getElementById('savePortButton');
+      const popupMessage = document.getElementById('popupMessage');
+
+      // Load theme from localStorage
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      if (currentTheme === 'dark') {
+        body.classList.replace('light-theme', 'dark-theme');
+        themeSwitcher.textContent = 'Switch to Light Theme';
+      }
+
+      // Load port from localStorage
+      const currentPort = localStorage.getItem('apiPort') || '';
+      portInput.value = currentPort;
+
+      themeSwitcher.addEventListener('click', () => {
+        if (body.classList.contains('dark-theme')) {
+          body.classList.replace('dark-theme', 'light-theme');
+          themeSwitcher.textContent = 'Switch to Dark Theme';
+          localStorage.setItem('theme', 'light'); // Save theme to localStorage
+        } else {
+          body.classList.replace('light-theme', 'dark-theme');
+          themeSwitcher.textContent = 'Switch to Light Theme';
+          localStorage.setItem('theme', 'dark'); // Save theme to localStorage
+        }
+      });
+
+      savePortButton.addEventListener('click', () => {
+        localStorage.setItem('apiPort', portInput.value); // Save entered port to localStorage
+        showPopupMessage();
+      });
+
+      imagesButton.addEventListener('click', () => {
+        const port = portInput.value || '7777';
+        localStorage.setItem('apiPort', port); // Save entered port to localStorage
+        window.location.href = 'images.html'; // Redirect to images page
+      });
+
+      function showPopupMessage() {
+        popupMessage.classList.add('show');
+        setTimeout(() => {
+          popupMessage.classList.remove('show');
+        }, 2000); // Hide message after 2 seconds
+      }
+    });
+  </script>
+</body>
+</html>

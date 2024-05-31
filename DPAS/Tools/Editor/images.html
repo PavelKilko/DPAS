@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Images</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts: Martian Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Martian Mono', monospace;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark-theme {
+      background-color: #121212;
+      color: #f1f1f1;
+    }
+    .light-theme {
+      background-color: #ffffff;
+      color: #000000;
+    }
+    .container {
+      margin-top: 50px;
+      position: relative;
+    }
+    .spinner-border {
+      display: none; /* Hide spinner initially */
+    }
+    .btn {
+      transition: box-shadow 0.3s ease-in-out;
+    }
+    .btn:hover {
+      box-shadow: 0 0 10px #bbd5ff;
+    }
+    table {
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .table-dark {
+      background-color: #1e1e1e;
+      color: #f1f1f1;
+    }
+    .table-light {
+      background-color: #ffffff;
+      color: #000000;
+    }
+    th {
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .th-dark {
+      background-color: #2c2c2c;
+      color: #bbd5ff;
+    }
+    .th-light {
+      background-color: #f8f9fa;
+      color: #000000;
+    }
+    td {
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .td-dark {
+      background-color: #1e1e1e;
+      color: #f1f1f1; /* Ensure table data text is also light for readability */
+    }
+    .td-light {
+      background-color: #ffffff;
+      color: #000000;
+    }
+    .table-striped tbody tr:nth-of-type(odd).dark-row {
+      background-color: #2c2c2c;
+    }
+    .table-striped tbody tr:nth-of-type(odd).light-row {
+      background-color: #f8f9fa;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    .dark-theme a {
+      color: #bbd5ff;
+    }
+    .light-theme a {
+      color: #007bff;
+    }
+    .spinner-border.text-primary {
+      color: #bbd5ff;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+      border-color: #dc3545;
+    }
+    .delete-btn:hover {
+      background-color: #bb2d3b;
+      border-color: #bb2d3b;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="text-center">Images</h1>
+      <div>
+        <button id="backToStartButton" class="btn btn-secondary">Back to Start</button>
+        <button id="themeSwitcher" class="btn btn-secondary ml-2">Switch to Light Theme</button>
+      </div>
+    </div>
+    <div id="loading" class="text-center">
+      <div class="spinner-border" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+    <div id="imagesList" class="mt-4">
+      <!-- Images list will be displayed here -->
+      <button id="exportButton" class="btn btn-primary mb-4">Export Images and Detections</button>
+      <div class="text-center mb-4">
+        <div id="exportSpinner" class="spinner-border text-primary" role="status" style="display: none;">
+          <span class="sr-only">Exporting...</span>
+        </div>
+      </div>
+      <table id="imagesTable" class="table table-striped table-dark">
+        <thead>
+          <tr>
+            <th class="th-dark">ID</th>
+            <th class="th-dark">Preview</th>
+            <th class="th-dark">Name</th>
+            <th class="th-dark">Created At</th>
+            <th class="th-dark">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Images rows will be added here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.amazonaws.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const body = document.body;
+      const themeSwitcher = document.getElementById('themeSwitcher');
+      const imagesTable = document.getElementById('imagesTable');
+      const tableHeaders = document.querySelectorAll('th');
+      const imagesList = document.querySelector('tbody');
+      const backToStartButton = document.getElementById('backToStartButton');
+
+      // Load theme from localStorage
+      const currentTheme = localStorage.getItem('theme') || 'dark';
+      if (currentTheme === 'light') {
+        body.classList.replace('dark-theme', 'light-theme');
+        themeSwitcher.textContent = 'Switch to Dark Theme';
+        imagesTable.classList.replace('table-dark', 'table-light');
+        tableHeaders.forEach(th => th.classList.replace('th-dark', 'th-light'));
+        imagesList.querySelectorAll('td').forEach(td => td.classList.replace('td-dark', 'td-light'));
+        imagesList.querySelectorAll('tr:nth-of-type(odd)').forEach(tr => {
+          tr.classList.replace('dark-row', 'light-row');
+        });
+        imagesList.querySelectorAll('a').forEach(a => a.classList.replace('dark-theme', 'light-theme'));
+      }
+
+      themeSwitcher.addEventListener('click', () => {
+        if (body.classList.contains('dark-theme')) {
+          body.classList.replace('dark-theme', 'light-theme');
+          themeSwitcher.textContent = 'Switch to Dark Theme';
+          imagesTable.classList.replace('table-dark', 'table-light');
+          tableHeaders.forEach(th => th.classList.replace('th-dark', 'th-light'));
+          imagesList.querySelectorAll('td').forEach(td => td.classList.replace('td-dark', 'td-light'));
+          imagesList.querySelectorAll('tr:nth-of-type(odd)').forEach(tr => {
+            tr.classList.replace('dark-row', 'light-row');
+          });
+          imagesList.querySelectorAll('a').forEach(a => a.classList.replace('dark-theme', 'light-theme'));
+          localStorage.setItem('theme', 'light'); // Save theme to localStorage
+        } else {
+          body.classList.replace('light-theme', 'dark-theme');
+          themeSwitcher.textContent = 'Switch to Light Theme';
+          imagesTable.classList.replace('table-light', 'table-dark');
+          tableHeaders.forEach(th => th.classList.replace('th-light', 'th-dark'));
+          imagesList.querySelectorAll('td').forEach(td => td.classList.replace('td-light', 'td-dark'));
+          imagesList.querySelectorAll('tr:nth-of-type(odd)').forEach(tr => {
+            tr.classList.replace('light-row', 'dark-row');
+          });
+          imagesList.querySelectorAll('a').forEach(a => a.classList.replace('light-theme', 'dark-theme'));
+          localStorage.setItem('theme', 'dark'); // Save theme to localStorage
+        }
+      });
+
+      const loadingSpinner = document.getElementById('loading');
+      const exportButton = document.getElementById('exportButton');
+      const exportSpinner = document.getElementById('exportSpinner');
+
+      // Show the loading spinner
+      loadingSpinner.querySelector('.spinner-border').style.display = 'block';
+
+      const fetchImages = async () => {
+        const port = localStorage.getItem('apiPort') || '7777';
+        const response = await fetch(`http://localhost:${port}/images`);
+        const images = await response.json();
+
+        images.forEach(image => {
+          const row = document.createElement('tr');
+          row.classList.add(body.classList.contains('dark-theme') ? 'dark-row' : 'light-row');
+          row.innerHTML = `
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">${image.id}</td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}"><img src="http://localhost:${port}/image/${image.name}" alt="${image.name}" style="width: 100px;"></td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}"><a href="image.html?name=${image.name}" class="${body.classList.contains('dark-theme') ? 'dark-theme' : 'light-theme'}">${image.name}</a></td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">${new Date(image.created_at).toLocaleString()}</td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">
+              <button class="btn btn-sm btn-danger delete-btn" data-id="${image.id}">Delete</button>
+              <div class="spinner-border spinner-border-sm text-danger" role="status" style="display: none;">
+                <span class="sr-only">Deleting...</span>
+              </div>
+            </td>
+          `;
+          imagesList.appendChild(row);
+        });
+
+        // Hide the loading spinner
+        loadingSpinner.querySelector('.spinner-border').style.display = 'none';
+      };
+
+      fetchImages();
+
+      // Handle export button click
+      exportButton.addEventListener('click', async () => {
+        // Show the spinner
+        exportSpinner.style.display = 'inline-block';
+
+        try {
+          const port = localStorage.getItem('apiPort') || '7777';
+          const response = await fetch(`http://localhost:${port}/export`);
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+
+            // Get current date and time
+            const now = new Date();
+            const dateString = now.toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
+            a.download = `dataset_${dateString}.zip`;
+
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+          } else {
+            console.error('Failed to export images and detections');
+          }
+        } catch (error) {
+          console.error('Error exporting images and detections:', error);
+        }
+
+        // Hide the spinner
+        exportSpinner.style.display = 'none';
+      });
+
+      // Handle delete button click
+      imagesList.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('delete-btn')) {
+          const id = event.target.dataset.id;
+          const row = event.target.closest('tr');
+          const spinner = event.target.nextElementSibling;
+
+          // Show the spinner
+          spinner.style.display = 'inline-block';
+
+          const port = localStorage.getItem('apiPort') || '7777';
+          const response = await fetch(`http://localhost:${port}/image/${id}`, {
+            method: 'DELETE'
+          });
+
+          if (response.ok) {
+            row.remove();
+          } else {
+            console.error('Failed to delete image');
+          }
+
+          // Hide the spinner
+          spinner.style.display = 'none';
+        }
+      });
+
+      // Handle back to start button click
+      backToStartButton.addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+    });
+  </script>
+</body>
+</html>

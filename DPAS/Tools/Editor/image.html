@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Detail</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts: Martian Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Martian Mono', monospace;
+      transition: background-color 0.3s, color 0.3s;
+      -webkit-user-select: none; /* Safari */
+      -ms-user-select: none; /* IE 10 and IE 11 */
+      user-select: none; /* Standard syntax */
+    }
+    .dark-theme {
+      background-color: #121212;
+      color: #f1f1f1;
+    }
+    .light-theme {
+      background-color: #f8f9fa;
+      color: #000000;
+    }
+    .container {
+      margin-top: 50px;
+      position: relative;
+    }
+    .spinner-border {
+      display: none; /* Hide spinner initially */
+    }
+    #image-container {
+      position: relative;
+      display: inline-block;
+      width: 100%; /* Set width to 50% of the page */
+    }
+    #image {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      pointer-events: none; /* Prevent pointer events on the image itself */
+    }
+    .detection-bound {
+      position: absolute;
+      border: 2px solid red;
+      pointer-events: none; /* Prevent pointer events on the detection bounds */
+    }
+    .detection-label {
+      position: absolute;
+      background-color: rgba(255, 255, 255, 0.7);
+      padding: 2px 4px;
+      font-size: 12px;
+      border: 1px solid #000;
+      border-radius: 3px;
+      pointer-events: none; /* Prevent pointer events on the detection labels */
+    }
+    .detection-list {
+      margin-top: 20px;
+    }
+    .detection-list table {
+      width: 100%;
+      border-collapse: collapse;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .table-dark {
+      background-color: #1e1e1e;
+      color: #f1f1f1;
+    }
+    .table-light {
+      background-color: #ffffff;
+      color: #000000;
+    }
+    .detection-list th, .detection-list td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .th-dark {
+      background-color: #2c2c2c;
+      color: #bbd5ff;
+    }
+    .th-light {
+      background-color: #f8f9fa;
+      color: #000000;
+    }
+    .td-dark {
+      background-color: #1e1e1e;
+      color: #f1f1f1; /* Ensure table data text is also light for readability */
+    }
+    .td-light {
+      background-color: #ffffff;
+      color: #000000;
+    }
+    .table-striped tbody tr:nth-of-type(odd).dark-row {
+      background-color: #2c2c2c;
+    }
+    .table-striped tbody tr:nth-of-type(odd).light-row {
+      background-color: #f8f9fa;
+    }
+    .label {
+      position: absolute;
+      font-size: 12px;
+      color: #000;
+      margin: -5px;
+      pointer-events: none; /* Prevent pointer events on the labels */
+    }
+    .dark-theme .label {
+      color: #f1f1f1;
+    }
+    .action-spinner {
+      display: none;
+      margin-left: 10px;
+    }
+    #draw-rectangle {
+      cursor: crosshair;
+    }
+    .btn {
+      transition: box-shadow 0.3s ease-in-out;
+    }
+    .btn:hover {
+      box-shadow: 0 0 10px #bbd5ff;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    .dark-theme a {
+      color: #bbd5ff;
+    }
+    .light-theme a {
+      color: #007bff;
+    }
+    .spinner-border.text-primary {
+      color: #bbd5ff;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+      border-color: #dc3545;
+    }
+    .delete-btn:hover {
+      background-color: #bb2d3b;
+      border-color: #bb2d3b;
+    }
+    .edit-form, .create-form {
+      display: none;
+      margin-top: 20px;
+    }
+    .dark-theme .form-control {
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    .dark-theme .form-control::placeholder {
+      color: #bbb;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="text-center">Image Detail</h1>
+      <div>
+        <button id="backToImagesButton" class="btn btn-secondary">Back to Images</button>
+        <button id="themeSwitcher" class="btn btn-secondary ml-2">Switch to Light Theme</button>
+      </div>
+    </div>
+    <h2 class="text-center" id="imageName"></h2>
+    <div class="d-flex justify-content-between mt-4">
+      <button class="btn btn-primary" id="prevImage">Previous</button>
+      <button class="btn btn-primary" id="nextImage">Next</button>
+    </div>
+    <div id="loading" class="text-center mt-4">
+      <div class="spinner-border" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+    <div id="imageDetail" class="mt-4 text-center">
+      <div id="image-container">
+        <img id="image" src="" alt="" class="img-fluid" draggable="false">
+        <div id="x-labels"></div>
+        <div id="y-labels"></div>
+        <div id="draw-rectangle"></div>
+      </div>
+    </div>
+    <div id="detectionList" class="detection-list mt-4">
+      <h2>Detections</h2>
+      <table id="detectionTable" class="table table-striped table-dark">
+        <thead>
+          <tr>
+            <th class="th-dark">ID</th>
+            <th class="th-dark">Tag</th>
+            <th class="th-dark">x_min</th>
+            <th class="th-dark">y_min</th>
+            <th class="th-dark">x_max</th>
+            <th class="th-dark">y_max</th>
+            <th class="th-dark">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Detection rows will be added here -->
+        </tbody>
+      </table>
+      <button class="btn btn-success mt-3" id="addNewDetection">Add New Detection</button>
+    </div>
+    <div id="editForm" class="edit-form">
+      <h3>Edit Detection</h3>
+      <form id="detectionEditForm">
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+          <label for="edit-tag">Tag</label>
+          <input type="text" class="form-control" id="edit-tag">
+        </div>
+        <div class="form-group">
+          <label for="edit-x_min">x_min</label>
+          <input type="number" class="form-control" id="edit-x_min">
+        </div>
+        <div class="form-group">
+          <label for="edit-y_min">y_min</label>
+          <input type="number" class="form-control" id="edit-y_min">
+        </div>
+        <div class="form-group">
+          <label for="edit-x_max">x_max"></label>
+          <input type="number" class="form-control" id="edit-x_max">
+        </div>
+        <div class="form-group">
+          <label for="edit-y_max">y_max"></label>
+          <input type="number" class="form-control" id="edit-y_max">
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" id="cancelEdit">Cancel</button>
+        <div id="edit-spinner" class="spinner-border text-primary action-spinner" role="status">
+          <span class="sr-only">Saving...</span>
+        </div>
+      </form>
+    </div>
+    <div id="createForm" class="create-form">
+      <h3>Add New Detection</h3>
+      <form id="detectionCreateForm">
+        <div class="form-group">
+          <label for="create-tag">Tag</label>
+          <input type="text" class="form-control" id="create-tag">
+        </div>
+        <div class="form-group">
+          <label for="create-x_min">x_min</label>
+          <input type="number" class="form-control" id="create-x_min">
+        </div>
+        <div class="form-group">
+          <label for="create-y_min">y_min</label>
+          <input type="number" class="form-control" id="create-y_min">
+        </div>
+        <div class="form-group">
+          <label for="create-x_max">x_max"></label>
+          <input type="number" class="form-control" id="create-x_max">
+        </div>
+        <div class="form-group">
+          <label for="create-y_max">y_max"></label>
+          <input type="number" class="form-control" id="create-y_max">
+        </div>
+        <button type="submit" class="btn btn-primary">Add</button>
+        <button type="button" class="btn btn-secondary" id="cancelCreate">Cancel</button>
+        <div id="create-spinner" class="spinner-border text-primary action-spinner" role="status">
+          <span class="sr-only">Adding...</span>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.amazonaws.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const body = document.body;
+      const themeSwitcher = document.getElementById('themeSwitcher');
+      const detectionTable = document.getElementById('detectionTable');
+      const tableHeaders = document.querySelectorAll('th');
+      const detectionList = document.querySelector('tbody');
+
+      // Load theme from localStorage
+      const currentTheme = localStorage.getItem('theme') || 'dark';
+      if (currentTheme === 'light') {
+        body.classList.replace('dark-theme', 'light-theme');
+        themeSwitcher.textContent = 'Switch to Dark Theme';
+        detectionTable.classList.replace('table-dark', 'table-light');
+        tableHeaders.forEach(th => th.classList.replace('th-dark', 'th-light'));
+        detectionList.querySelectorAll('td').forEach(td => td.classList.replace('td-dark', 'td-light'));
+        detectionList.querySelectorAll('tr:nth-of-type(odd)').forEach(tr => {
+          tr.classList.replace('dark-row', 'light-row');
+        });
+        detectionList.querySelectorAll('a').forEach(a => a.classList.replace('dark-theme', 'light-theme'));
+      }
+
+      themeSwitcher.addEventListener('click', () => {
+        if (body.classList.contains('dark-theme')) {
+          body.classList.replace('dark-theme', 'light-theme');
+          themeSwitcher.textContent = 'Switch to Dark Theme';
+          detectionTable.classList.replace('table-dark', 'table-light');
+          tableHeaders.forEach(th => th.classList.replace('th-dark', 'th-light'));
+          detectionList.querySelectorAll('td').forEach(td => td.classList.replace('td-dark', 'td-light'));
+          detectionList.querySelectorAll('tr:nth-of-type(odd)').forEach(tr => {
+            tr.classList.replace('dark-row', 'light-row');
+          });
+          detectionList.querySelectorAll('a').forEach(a => a.classList.replace('dark-theme', 'light-theme'));
+          localStorage.setItem('theme', 'light'); // Save theme to localStorage
+        } else {
+          body.classList.replace('light-theme', 'dark-theme');
+          themeSwitcher.textContent = 'Switch to Light Theme';
+          detectionTable.classList.replace('table-light', 'table-dark');
+          tableHeaders.forEach(th => th.classList.replace('th-light', 'th-dark'));
+          detectionList.querySelectorAll('td').forEach(td => td.classList.replace('td-light', 'td-dark'));
+          detectionList.querySelectorAll('tr:nth-of-type(odd)').forEach(tr => {
+            tr.classList.replace('light-row', 'dark-row');
+          });
+          detectionList.querySelectorAll('a').forEach(a => a.classList.replace('light-theme', 'dark-theme'));
+          localStorage.setItem('theme', 'dark'); // Save theme to localStorage
+        }
+      });
+
+      const loadingSpinner = document.getElementById('loading');
+      const imageDetail = document.getElementById('imageDetail');
+      const imageElement = document.getElementById('image');
+      const imageNameElement = document.getElementById('imageName');
+      const imageContainer = document.getElementById('image-container');
+      const drawRectangle = document.getElementById('draw-rectangle');
+      const editForm = document.getElementById('editForm');
+      const createForm = document.getElementById('createForm');
+      const detectionEditForm = document.getElementById('detectionEditForm');
+      const detectionCreateForm = document.getElementById('detectionCreateForm');
+      const cancelEdit = document.getElementById('cancelEdit');
+      const cancelCreate = document.getElementById('cancelCreate');
+      const xLabelsContainer = document.getElementById('x-labels');
+      const yLabelsContainer = document.getElementById('y-labels');
+      const editSpinner = document.getElementById('edit-spinner');
+      const createSpinner = document.getElementById('create-spinner');
+      const prevImageBtn = document.getElementById('prevImage');
+      const nextImageBtn = document.getElementById('nextImage');
+      const backToImagesButton = document.getElementById('backToImagesButton');
+
+      let startX, startY, endX, endY, isDrawing = false, currentRect;
+      let imagesData = []; // To store all images data for navigation
+
+      // Get the image name from the URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const imageName = urlParams.get('name');
+
+      if (!imageName) {
+        imageDetail.textContent = 'No image name provided.';
+        return;
+      }
+
+      // Show the loading spinner
+      loadingSpinner.querySelector('.spinner-border').style.display = 'block';
+
+      let detectionsData = [];
+
+      const fetchImages = async () => {
+        const port = localStorage.getItem('apiPort') || '7777';
+        const response = await fetch(`http://localhost:${port}/images`);
+        const images = await response.json();
+        imagesData = images;
+      };
+
+      const fetchDetections = async () => {
+        const port = localStorage.getItem('apiPort') || '7777';
+        const detectionResponse = await fetch(`http://localhost:${port}/detections/${imageName}`);
+        const detections = await detectionResponse.json();
+        detectionsData = detections;
+
+        const imageRect = imageElement.getBoundingClientRect();
+
+        // Clear existing detections and labels
+        detectionList.innerHTML = '';
+        document.querySelectorAll('.detection-bound').forEach(bound => bound.remove());
+        xLabelsContainer.innerHTML = '';
+        yLabelsContainer.innerHTML = '';
+
+        // Create x-axis labels
+        for (let i = 0; i <= imageElement.naturalWidth; i += imageElement.naturalWidth / 5) {
+          const xLabel = document.createElement('div');
+          xLabel.classList.add('label');
+          xLabel.style.left = `${(i / imageElement.naturalWidth) * imageRect.width}px`;
+          xLabel.style.top = `${imageRect.height + 5}px`;
+          xLabel.innerText = Math.round(i);
+          xLabelsContainer.appendChild(xLabel);
+        }
+
+        // Create y-axis labels
+        for (let i = 0; i <= imageElement.naturalHeight; i += imageElement.naturalHeight / 5) {
+          const yLabel = document.createElement('div');
+          yLabel.classList.add('label');
+          yLabel.style.left = `-25px`;
+          yLabel.style.top = `${(i / imageElement.naturalHeight) * imageRect.height}px`;
+          yLabel.innerText = Math.round(i);
+          yLabelsContainer.appendChild(yLabel);
+        }
+
+        detections.forEach(detection => {
+          // Create and position detection bounds
+          const bound = document.createElement('div');
+          bound.classList.add('detection-bound');
+          bound.style.left = `${(detection.x_min / imageElement.naturalWidth) * imageRect.width}px`;
+          bound.style.top = `${(detection.y_min / imageElement.naturalHeight) * imageRect.height}px`;
+          bound.style.width = `${((detection.x_max - detection.x_min) / imageElement.naturalWidth) * imageRect.width}px`;
+          bound.style.height = `${((detection.y_max - detection.y_min) / imageElement.naturalHeight) * imageRect.height}px`;
+
+          // Create and position detection label
+          const label = document.createElement('div');
+          label.classList.add('detection-label');
+          label.style.left = '0';
+          label.style.top = '0';
+          label.innerText = `(${detection.id}) ${detection.tag_name}`;
+          bound.appendChild(label);
+
+          imageContainer.appendChild(bound);
+
+          // Add detection to the list
+          const row = document.createElement('tr');
+          row.classList.add(body.classList.contains('dark-theme') ? 'dark-row' : 'light-row');
+          row.innerHTML = `
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">${detection.id}</td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">${detection.tag_name}</td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">${detection.x_min}</td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">${detection.y_min}</td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">${detection.x_max}</td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">${detection.y_max}</td>
+            <td class="${body.classList.contains('dark-theme') ? 'td-dark' : 'td-light'}">
+              <button class="btn btn-sm btn-primary edit-btn" data-id="${detection.id}">Edit</button>
+              <button class="btn btn-sm btn-danger delete-btn" data-id="${detection.id}">Delete</button>
+              <div id="delete-spinner-${detection.id}" class="spinner-border text-danger action-spinner" role="status">
+                <span class="sr-only">Deleting...</span>
+              </div>
+            </td>
+          `;
+          detectionList.appendChild(row);
+        });
+      };
+
+      const adjustAxes = () => {
+        const imageRect = imageElement.getBoundingClientRect();
+
+        // Adjust the labels positioning
+        xLabelsContainer.childNodes.forEach((label, index) => {
+          label.style.left = `${(index * imageRect.width / 5)}px`;
+          label.style.top = `${imageRect.height + 5}px`;
+        });
+
+        yLabelsContainer.childNodes.forEach((label, index) => {
+          label.style.left = `-25px`;
+          label.style.top = `${(index * imageRect.height / 5)}px`;
+        });
+      };
+
+      try {
+        // Fetch and display the image
+        const port = localStorage.getItem('apiPort') || '7777';
+        const imageResponse = await fetch(`http://localhost:${port}/image/${imageName}`);
+        if (imageResponse.ok) {
+          imageElement.src = `http://localhost:${port}/image/${imageName}`;
+          imageElement.alt = imageName;
+          imageNameElement.textContent = imageName; // Set the image name
+
+          // Wait for the image to load to get the correct dimensions
+          imageElement.onload = async () => {
+            await fetchImages(); // Fetch all images data for navigation
+            adjustAxes();
+            // Fetch and display the detections
+            await fetchDetections();
+
+            // Hide the loading spinner
+            loadingSpinner.querySelector('.spinner-border').style.display = 'none';
+          };
+        } else {
+          imageDetail.textContent = 'Image not found.';
+          loadingSpinner.querySelector('.spinner-border').style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error fetching image details:', error);
+        imageDetail.textContent = 'Error loading image.';
+        loadingSpinner.querySelector('.spinner-border').style.display = 'none';
+      }
+
+      // Handle drawing rectangle
+      imageContainer.addEventListener('mousedown', (event) => {
+        isDrawing = true;
+        startX = event.offsetX;
+        startY = event.offsetY;
+
+        currentRect = document.createElement('div');
+        currentRect.classList.add('detection-bound');
+        currentRect.style.left = `${startX}px`;
+        currentRect.style.top = `${startY}px`;
+        currentRect.style.pointerEvents = 'none'; // Prevent pointer events on the current rectangle
+        imageContainer.appendChild(currentRect);
+      });
+
+      imageContainer.addEventListener('mousemove', (event) => {
+        if (!isDrawing) return;
+
+        endX = event.offsetX;
+        endY = event.offsetY;
+
+        currentRect.style.width = `${Math.abs(endX - startX)}px`;
+        currentRect.style.height = `${Math.abs(endY - startY)}px`;
+        currentRect.style.left = `${Math.min(startX, endX)}px`;
+        currentRect.style.top = `${Math.min(startY, endY)}px`;
+      });
+
+      imageContainer.addEventListener('mouseup', (event) => {
+        if (!isDrawing) return;
+        isDrawing = false;
+
+        endX = event.offsetX;
+        endY = event.offsetY;
+
+        const imageRect = imageElement.getBoundingClientRect();
+        const x_min = Math.round((Math.min(startX, endX) / imageRect.width) * imageElement.naturalWidth);
+        const y_min = Math.round((Math.min(startY, endY) / imageRect.height) * imageElement.naturalHeight);
+        const x_max = Math.round((Math.max(startX, endX) / imageRect.width) * imageElement.naturalWidth);
+        const y_max = Math.round((Math.max(startY, endY) / imageRect.height) * imageElement.naturalHeight);
+
+        document.getElementById('create-x_min').value = x_min;
+        document.getElementById('create-y_min').value = y_min;
+        document.getElementById('create-x_max').value = x_max;
+        document.getElementById('create-y_max').value = y_max;
+
+        // Hide the edit form if visible and show the create form
+        editForm.style.display = 'none';
+        createForm.style.display = 'block';
+      });
+
+      // Handle edit button click
+      detectionList.addEventListener('click', (event) => {
+        if (event.target.classList.contains('edit-btn')) {
+          const id = event.target.dataset.id;
+          const detection = detectionsData.find(d => d.id == id);
+
+          // Populate the form with the detection data
+          document.getElementById('edit-id').value = detection.id;
+          document.getElementById('edit-tag').value = detection.tag_name;
+          document.getElementById('edit-x_min').value = detection.x_min;
+          document.getElementById('edit-y_min').value = detection.y_min;
+          document.getElementById('edit-x_max').value = detection.x_max;
+          document.getElementById('edit-y_max').value = detection.y_max;
+
+          // Hide the create form if visible and show the edit form
+          createForm.style.display = 'none';
+          editForm.style.display = 'block';
+        }
+      });
+
+      // Handle form submission for editing
+      detectionEditForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const id = document.getElementById('edit-id').value;
+        const tag = document.getElementById('edit-tag').value;
+        const x_min = document.getElementById('edit-x_min').value;
+        const y_min = document.getElementById('edit-y_min').value;
+        const x_max = document.getElementById('edit-x_max').value;
+        const y_max = document.getElementById('edit-y_max').value;
+
+        try {
+          // Show edit spinner
+          editSpinner.style.display = 'inline-block';
+          const port = localStorage.getItem('apiPort') || '7777';
+          const response = await fetch(`http://localhost:${port}/detection/${id}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              x_min: x_min,
+              y_min: y_min,
+              x_max: x_max,
+              y_max: y_max,
+              tag_name: tag
+            })
+          });
+
+          if (response.ok) {
+            await fetchDetections();
+            adjustAxes();
+
+            // Hide the form and spinner
+            editForm.style.display = 'none';
+            editSpinner.style.display = 'none';
+          } else {
+            console.error('Failed to update detection');
+            editSpinner.style.display = 'none';
+          }
+        } catch (error) {
+          console.error('Error updating detection:', error);
+          editSpinner.style.display = 'none';
+        }
+      });
+
+      // Handle delete button click
+      detectionList.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('delete-btn')) {
+          const id = event.target.dataset.id;
+          const deleteSpinner = document.getElementById(`delete-spinner-${id}`);
+          const port = localStorage.getItem('apiPort') || '7777';
+          try {
+            // Show delete spinner
+            deleteSpinner.style.display = 'inline-block';
+
+            const response = await fetch(`http://localhost:${port}/detection/${id}`, {
+              method: 'DELETE'
+            });
+
+            if (response.ok) {
+              await fetchDetections();
+              adjustAxes();
+
+              // Hide delete spinner
+              deleteSpinner.style.display = 'none';
+            } else {
+              console.error('Failed to delete detection');
+              deleteSpinner.style.display = 'none';
+            }
+          } catch (error) {
+            console.error('Error deleting detection:', error);
+            deleteSpinner.style.display = 'none';
+          }
+        }
+      });
+
+      // Handle add new detection button click
+      document.getElementById('addNewDetection').addEventListener('click', () => {
+        // Hide the edit form if visible and show the create form
+        editForm.style.display = 'none';
+        createForm.style.display = 'block';
+      });
+
+      // Handle form submission for creating a new detection
+      detectionCreateForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const tag = document.getElementById('create-tag').value;
+        const x_min = document.getElementById('create-x_min').value;
+        const y_min = document.getElementById('create-y_min').value;
+        const x_max = document.getElementById('create-x_max').value;
+        const y_max = document.getElementById('create-y_max').value;
+
+        try {
+          // Show create spinner
+          createSpinner.style.display = 'inline-block';
+          const port = localStorage.getItem('apiPort') || '7777';
+          const response = await fetch(`http://localhost:${port}/detections`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              image_name: imageName,
+              x_min: x_min,
+              y_min: y_min,
+              x_max: x_max,
+              y_max: y_max,
+              tag_name: tag
+            })
+          });
+
+          if (response.ok) {
+            await fetchDetections();
+            adjustAxes();
+
+            // Hide the form and spinner, clear form fields
+            createForm.style.display = 'none';
+            createSpinner.style.display = 'none';
+            detectionCreateForm.reset(); // Ensure the form is reset
+          } else {
+            console.error('Failed to create detection');
+            createSpinner.style.display = 'none';
+          }
+        } catch (error) {
+          console.error('Error creating detection:', error);
+          createSpinner.style.display = 'none';
+        }
+      });
+
+      // Handle cancel button click for creating
+      cancelCreate.addEventListener('click', () => {
+        createForm.style.display = 'none';
+        detectionCreateForm.reset(); // Clear form fields
+        if (currentRect) {
+          currentRect.remove(); // Remove the drawn rectangle
+          currentRect = null;
+        }
+      });
+
+      // Handle cancel button click for editing
+      cancelEdit.addEventListener('click', () => {
+        editForm.style.display = 'none';
+      });
+
+      // Adjust axes on window resize
+      window.addEventListener('resize', adjustAxes);
+
+      // Handle previous image button click
+      prevImageBtn.addEventListener('click', () => {
+        const currentIndex = imagesData.findIndex(image => image.name === imageName);
+        if (currentIndex > 0) {
+          const prevImage = imagesData[currentIndex - 1];
+          window.location.href = `image.html?name=${prevImage.name}`;
+        }
+      });
+
+      // Handle next image button click
+      nextImageBtn.addEventListener('click', () => {
+        const currentIndex = imagesData.findIndex(image => image.name === imageName);
+        if (currentIndex < imagesData.length - 1) {
+          const nextImage = imagesData[currentIndex + 1];
+          window.location.href = `image.html?name=${nextImage.name}`;
+        }
+      });
+
+      // Handle back to images button click
+      backToImagesButton.addEventListener('click', () => {
+        window.location.href = 'images.html';
+      });
+    });
+  </script>
+</body>
+</html>
